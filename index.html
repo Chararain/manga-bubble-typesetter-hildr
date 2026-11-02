@@ -33,6 +33,11 @@
   input[type=color]{width:42px;height:22px;border:1px solid #444;background:#111;vertical-align:middle;}
   .tag{font-size:11px;padding:1px 5px;border-radius:3px;background:rgba(45,108,223,.2);color:var(--fg);}
   .hint{font-size:11px;color:#888;line-height:1.6;margin-top:8px;}
+  .palrow{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:4px;}
+  .sw{width:22px;height:22px;border-radius:4px;border:1px solid #555;cursor:pointer;position:relative;}
+  .sw:hover{outline:2px solid var(--accent);}
+  .swadd{width:22px;height:22px;border-radius:4px;border:1px dashed #666;color:#9ad;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-size:14px;background:transparent;}
   #special{background:#1c1c22;border:1px solid #2f2f3a;border-radius:6px;padding:8px;margin-top:6px;}
 
   #bgimg{position:fixed;inset:0;z-index:0;background-size:cover;background-position:center;
@@ -56,15 +61,14 @@
   #mClose{font-size:20px;color:#999;cursor:pointer;}
   #mClose:hover{color:#fff;}
   .keybox.rec{border-color:#ffd76a;background:#332a12;}
-  #gear{position:absolute;right:8px;top:6px;z-index:60;background:#00000066;border:1px solid #555;
-    color:#ddd;border-radius:50%;width:26px;height:26px;font-size:14px;cursor:pointer;line-height:1;}
+  #gear{display:block;width:calc(100% - 0px);padding:11px 0;font-size:15px;font-weight:600;
+    letter-spacing:2px;border-radius:6px;margin:0 0 10px;}
   body{background-color:var(--bg);}
 
 </style>
 </head>
 <body>
 <div id="bgimg"></div>
-<button id="gear" title="设置">⚙</button>
 <div id="app">
 <div id="strip">
   <div id="tabs"><button id="tabTodo" class="on">未做</button><button id="tabDone">已完成</button></div>
@@ -73,6 +77,7 @@
 <div id="left"><canvas id="cv"></canvas></div>
 
 <div id="right">
+  <button id="gear" title="设置（F2）">⚙ 设置</button>
   <h3>导入 / 页面</h3>
   <input type="file" id="file" accept="image/*" multiple>
   <span id="info" style="font-size:11px;color:#888"></span>
@@ -99,6 +104,30 @@
   <label>上下留白 <span id="pyv" class="tag">16</span></label>
   <input type="range" id="py" min="2" max="90" value="16">
   <label>气泡色 <input type="color" id="fillc" value="#ffffff"> 描边 <input type="color" id="linec" value="#141414"></label>
+
+  <label>调色盘（左键上色 · 双击替换 · 右键删除）</label>
+  <div id="palette" class="palrow"></div>
+  <div class="row" style="margin-top:5px">
+    <button id="pickColor" class="sec" style="font-size:11px;padding:5px 9px">💧 吸管取色</button>
+    <span id="palHint" style="font-size:11px;color:#888"></span>
+  </div>
+
+  <label>文字颜色</label>
+  <div class="row">
+    <select id="textMode" style="width:auto;flex:1">
+      <option value="auto">自动（按底色反色）</option>
+      <option value="solid">单色</option>
+      <option value="gradient">渐变</option>
+    </select>
+    <input type="color" id="textA" value="#111111" title="单色 / 渐变起点">
+    <input type="color" id="textB" value="#5b8cff" title="渐变终点">
+  </div>
+  <label>渐变方向</label>
+  <select id="gradDir">
+    <option value="v">上下</option>
+    <option value="h">左右</option>
+    <option value="d">斜向</option>
+  </select>
   <label>不透明度 <span id="opv" class="tag">97%</span></label>
   <input type="range" id="op" min="10" max="100" value="97">
   <label>描边粗细 <span id="stv" class="tag">3</span></label>
@@ -117,6 +146,21 @@
   <label>角度 <span id="sfxrv" class="tag">-8</span></label>
   <input type="range" id="sfxRot" min="-45" max="45" value="-8">
   <label>字色 <input type="color" id="sfxFill" value="#ffffff"> 描边 <input type="color" id="sfxLine" value="#141414"></label>
+  <label>拟声颜色模式</label>
+  <div class="row">
+    <select id="sfxMode" style="width:auto;flex:1">
+      <option value="solid">单色</option>
+      <option value="gradient">渐变</option>
+    </select>
+    <input type="color" id="sfxA" value="#ffd76a" title="渐变起点">
+    <input type="color" id="sfxB" value="#ff5b5b" title="渐变终点">
+  </div>
+  <label>渐变方向</label>
+  <select id="sfxDir">
+    <option value="h">左右</option>
+    <option value="v">上下</option>
+    <option value="d">斜向</option>
+  </select>
   <label>描边粗细 <span id="sfxwv" class="tag">6</span></label>
   <input type="range" id="sfxW" min="0" max="18" value="6">
   <label>柔光 <span id="sfxgv" class="tag">0</span></label>
@@ -197,6 +241,7 @@ function metrics(b){
 }
 
 function outlinePoints(b){
+  if(b.seed==null || !isFinite(b.seed)) b.seed=Math.random()*9999;   // 兜底：缺随机种子会算出 NaN
   const {rx,ry}=metrics(b), st=b.style||'smooth', pts=[];
   if(st==='rect'){
     const r=Math.min(b.corner??14, Math.min(rx,ry));
@@ -293,16 +338,37 @@ function drawBubble(b,isSel){
   }
   ctx.restore();
 }
+function textPaint(b, lines, lh){
+  const mode=b.textMode||'auto';
+  if(mode==='solid') return b.textA||'#111111';
+  if(mode==='gradient'){
+    // 按“文字块”的实际范围算渐变，而不是气泡半径
+    const lh=b.size*1.55;
+    const tw=Math.max(...lines.map(l=>ctx.measureText(l).width), b.size);
+    const th=Math.max(1,lines.length)*lh;
+    const dir=b.gradDir||'v';
+    let x0=b.x, y0=b.y, x1=b.x, y1=b.y;
+    if(dir==='h'){ x0=b.x-tw/2; x1=b.x+tw/2; }
+    else if(dir==='d'){ x0=b.x-tw/2; y0=b.y-th/2; x1=b.x+tw/2; y1=b.y+th/2; }
+    else { y0=b.y-th/2; y1=b.y+th/2; }
+    const g=ctx.createLinearGradient(x0,y0,x1,y1);
+    g.addColorStop(0, b.textA||'#111111');
+    g.addColorStop(1, b.textB||'#5b8cff');
+    return g;
+  }
+  return lum(b.fill)>0.55?'#111':'#fff';
+}
 function drawText(b){
   const {lines}=metrics(b);
   ctx.save(); ctx.font=`${b.size}px ${FONT}`;
-  ctx.fillStyle=lum(b.fill)>0.55?'#111':'#fff';
+  ctx.fillStyle=textPaint(b, lines, b.size*1.55);
   ctx.textAlign='center'; ctx.textBaseline='middle';
   const lh=b.size*1.55; let y=b.y-(lines.length-1)*lh/2;
   lines.forEach(l=>{ctx.fillText(l,b.x,y); y+=lh;});
   ctx.restore();
 }
 function sfxBox(s){
+  if(s.size==null||!isFinite(s.size)) s.size=40;
   ctx.font=`${s.size}px ${FONT}`;
   let t=s.text||'';
   if(s.sign==='paren') t='（'+t+'）'; else if(s.sign==='bracket') t='「'+t+'」';
@@ -319,12 +385,23 @@ function drawSfx(s,isSel){
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.lineJoin='round';
   const lh=s.size*1.15;
+  let paint=s.fill||'#ffffff';
+  if((s.textMode||'solid')==='gradient'){
+    const dir=s.gradDir||'h';
+    let x0=-w/2, y0=0, x1=w/2, y1=0;
+    if(dir==='v'){ x0=0; y0=-h/2; x1=0; y1=h/2; }
+    else if(dir==='d'){ x0=-w/2; y0=-h/2; x1=w/2; y1=h/2; }
+    const gr=ctx.createLinearGradient(x0,y0,x1,y1);
+    gr.addColorStop(0, s.textA||'#ffd76a');
+    gr.addColorStop(1, s.textB||'#ff5b5b');
+    paint=gr;
+  }
   lines.forEach((ln,i)=>{
     const y=(i-(lines.length-1)/2)*lh;
     if(s.glow>0){ ctx.shadowColor='rgba(0,0,0,0.85)'; ctx.shadowBlur=s.glow; }
     if(s.strokeW>0){ ctx.lineWidth=s.strokeW; ctx.strokeStyle=s.line||'#141414'; ctx.strokeText(ln,0,y); }
     ctx.shadowBlur=0;
-    ctx.fillStyle=s.fill||'#ffffff'; ctx.fillText(ln,0,y);
+    ctx.fillStyle=paint; ctx.fillText(ln,0,y);
   });
   if(isSel){
     ctx.strokeStyle='#2d6cdf'; ctx.lineWidth=1.5; ctx.setLineDash([6,4]);
@@ -474,6 +551,13 @@ function sync(){
     el('st').value=b.stroke??3; el('stv').textContent=b.stroke??3;
     el('style').value=b.style||'smooth'; el('tail').checked=b.tail!==false;
     el('fillc').value=b.fill||'#ffffff'; el('linec').value=b.line||'#141414';
+    el('textMode').value=b.textMode||'auto';
+    el('textA').value=b.textA||'#111111';
+    el('textB').value=b.textB||'#5b8cff';
+    el('gradDir').value=b.gradDir||'v';
+    el('textA').disabled=(el('textMode').value==='auto');
+    el('textB').disabled=(el('textMode').value!=='gradient');
+    el('gradDir').disabled=(el('textMode').value!=='gradient');
     buildSpecial();
   }
   if(it&&selS>=0){
@@ -483,6 +567,13 @@ function sync(){
     el('sfxRot').value=s.rot||0; el('sfxrv').textContent=s.rot||0;
     el('sfxFill').value=s.fill||'#ffffff'; el('sfxLine').value=s.line||'#141414';
     el('sfxW').value=s.strokeW??6; el('sfxwv').textContent=s.strokeW??6;
+    el('sfxMode').value=s.textMode||'solid';
+    el('sfxA').value=s.textA||'#ffd76a';
+    el('sfxB').value=s.textB||'#ff5b5b';
+    el('sfxDir').value=s.gradDir||'h';
+    el('sfxA').disabled=(el('sfxMode').value!=='gradient');
+    el('sfxB').disabled=(el('sfxMode').value!=='gradient');
+    el('sfxDir').disabled=(el('sfxMode').value!=='gradient');
     el('sfxGlow').value=s.glow??0; el('sfxgv').textContent=s.glow??0;
     el('sfxSign').value=s.sign||'none';
   } else { el('sfxTxt').value=''; }
@@ -494,6 +585,14 @@ cv.onmousedown=e=>{
   const it=curItem(); if(!it)return;
   if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
   const p=pos(e);
+  if(PICKING){
+    const c=sampleImageColor(p.x,p.y);
+    if(c){ applyColorTo(ACTIVE_COLOR,c); palHint('取到 '+c); }
+    PICKING=false;
+    const pb=document.getElementById('pickColor');
+    if(pb){ pb.style.background=''; pb.textContent='💧 吸管取色'; }
+    return;
+  }
   if(selB>=0&&it.bubbles[selB]&&it.bubbles[selB].tail!==false){
     const b=it.bubbles[selB],[p1,p2]=basePts(b);
     if(Math.hypot(p.x-p1.x,p.y-p1.y)<18){drag={mode:'a1'};return;}
@@ -566,7 +665,7 @@ document.getElementById('addSfx').onclick=()=>{
   const it=curItem(); if(!it)return;
   it.sfx=it.sfx||[];
   const w=it.img.width,h=it.img.height;
-  it.sfx.push({x:w*0.7,y:h*0.75,size:40,rot:-8,fill:'#ffffff',line:'#141414',strokeW:6,glow:0,sign:'none',text:'哗——'});
+  it.sfx.push({x:w*0.7,y:h*0.75,size:40,rot:-8,fill:'#ffffff',line:'#141414',strokeW:6,glow:0,sign:'none',textMode:'solid',textA:'#ffd76a',textB:'#ff5b5b',gradDir:'h',text:'哗——'});
   selS=it.sfx.length-1; selB=-1; sync(); draw();
 };
 document.getElementById('delSfx').onclick=()=>{const it=curItem();
@@ -584,6 +683,12 @@ bindS('op',v=>{document.getElementById('opv').textContent=v+'%';const it=curItem
 bindS('st',v=>{document.getElementById('stv').textContent=v;const it=curItem();if(it&&selB>=0)it.bubbles[selB].stroke=+v;});
 bindS('fillc',v=>{const it=curItem();if(it&&selB>=0)it.bubbles[selB].fill=v;});
 bindS('linec',v=>{const it=curItem();if(it&&selB>=0)it.bubbles[selB].line=v;});
+bindS('textA',v=>{const it=curItem();if(it&&selB>=0)it.bubbles[selB].textA=v;});
+bindS('textB',v=>{const it=curItem();if(it&&selB>=0)it.bubbles[selB].textB=v;});
+const tmEl2=document.getElementById('textMode');
+if(tmEl2) tmEl2.onchange=e=>{const it=curItem();if(it&&selB>=0){it.bubbles[selB].textMode=e.target.value;sync();draw();}};
+const gdEl2=document.getElementById('gradDir');
+if(gdEl2) gdEl2.onchange=e=>{const it=curItem();if(it&&selB>=0){it.bubbles[selB].gradDir=e.target.value;draw();}};
 document.getElementById('style').onchange=e=>{const it=curItem();
   if(it&&selB>=0){it.bubbles[selB].style=e.target.value;sync();draw();}};
 document.getElementById('tail').onchange=e=>{const it=curItem();
@@ -598,6 +703,12 @@ bindS('sfxFill',v=>{const it=curItem();if(it&&selS>=0)it.sfx[selS].fill=v;});
 bindS('sfxLine',v=>{const it=curItem();if(it&&selS>=0)it.sfx[selS].line=v;});
 bindS('sfxW',v=>{document.getElementById('sfxwv').textContent=v;const it=curItem();if(it&&selS>=0)it.sfx[selS].strokeW=+v;});
 bindS('sfxGlow',v=>{document.getElementById('sfxgv').textContent=v;const it=curItem();if(it&&selS>=0)it.sfx[selS].glow=+v;});
+bindS('sfxA',v=>{const it=curItem();if(it&&selS>=0)it.sfx[selS].textA=v;});
+bindS('sfxB',v=>{const it=curItem();if(it&&selS>=0)it.sfx[selS].textB=v;});
+const smEl=document.getElementById('sfxMode');
+if(smEl) smEl.onchange=e=>{const it=curItem();if(it&&selS>=0){it.sfx[selS].textMode=e.target.value;sync();draw();}};
+const sdEl=document.getElementById('sfxDir');
+if(sdEl) sdEl.onchange=e=>{const it=curItem();if(it&&selS>=0){it.sfx[selS].gradDir=e.target.value;draw();}};
 document.getElementById('sfxSign').onchange=e=>{const it=curItem();
   if(it&&selS>=0){it.sfx[selS].sign=e.target.value;draw();}};
 
@@ -855,6 +966,83 @@ document.getElementById('uiReset').onclick=()=>{
   applySet(); renderKeys(); saveSet();
 };
 applySet(); renderKeys();
+
+
+/* ---------- 调色盘（增 / 删 / 改 / 吸管） ---------- */
+if(!SET.palette) SET.palette=['#ffffff','#141414','#ff5b5b','#ffd76a','#5b8cff','#3ad07a','#d8b89a'];
+let ACTIVE_COLOR='fillc';
+let PICKING=false;
+const COLOR_SETTERS={
+  fillc:(v)=>{const it=curItem(); if(it&&selB>=0) it.bubbles[selB].fill=v;},
+  linec:(v)=>{const it=curItem(); if(it&&selB>=0) it.bubbles[selB].line=v;},
+  textA:(v)=>{const it=curItem(); if(it&&selB>=0) it.bubbles[selB].textA=v;},
+  textB:(v)=>{const it=curItem(); if(it&&selB>=0) it.bubbles[selB].textB=v;},
+  sfxFill:(v)=>{const it=curItem(); if(it&&selS>=0) it.sfx[selS].fill=v;},
+  sfxLine:(v)=>{const it=curItem(); if(it&&selS>=0) it.sfx[selS].line=v;},
+  sfxA:(v)=>{const it=curItem(); if(it&&selS>=0) it.sfx[selS].textA=v;},
+  sfxB:(v)=>{const it=curItem(); if(it&&selS>=0) it.sfx[selS].textB=v;}
+};
+function palHint(msg){ const el=document.getElementById('palHint'); if(el) el.textContent=msg||''; }
+function applyColorTo(id,v){
+  const fn=COLOR_SETTERS[id]; if(!fn) return false;
+  fn(v);
+  const el=document.getElementById(id); if(el) el.value=v;
+  draw(); return true;
+}
+function currentColor(){
+  const el=document.getElementById(ACTIVE_COLOR);
+  return el? el.value : '#ffffff';
+}
+/* 吸管：点画布取底图颜色 */
+function sampleImageColor(px,py){
+  const it=curItem(); if(!it||!it.img) return null;
+  const off=document.createElement('canvas');
+  off.width=1; off.height=1;
+  const g=off.getContext('2d', {willReadFrequently:true});
+  try{
+    g.drawImage(it.img, Math.round(px), Math.round(py), 1, 1, 0, 0, 1, 1);
+    const d=g.getImageData(0,0,1,1).data;
+    return '#'+[d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+  }catch(e){ return null; }
+}
+const pickBtn=document.getElementById('pickColor');
+if(pickBtn) pickBtn.onclick=()=>{
+  PICKING=!PICKING;
+  pickBtn.style.background = PICKING ? 'var(--accent)' : '';
+  pickBtn.textContent = PICKING ? '💧 点画布取色…' : '💧 吸管取色';
+  palHint(PICKING ? '在画布上点一下，取那里的颜色' : '');
+};
+function renderPalette(){
+  const box=document.getElementById('palette'); if(!box) return;
+  box.innerHTML='';
+  SET.palette.forEach((c,idx)=>{
+    const d=document.createElement('div');
+    d.className='sw'; d.style.background=c; d.title=c+'\n左键上色 / 双击替换为当前色 / 右键删除';
+    d.onclick=()=>{ applyColorTo(ACTIVE_COLOR,c); palHint('已上色 '+c); };
+    d.ondblclick=(ev)=>{ ev.preventDefault();
+      const cur=currentColor();
+      SET.palette[idx]=cur; saveSet(); renderPalette(); palHint('已替换为 '+cur); };
+    d.oncontextmenu=(ev)=>{ ev.preventDefault();
+      SET.palette.splice(idx,1); saveSet(); renderPalette(); palHint('已删除该色'); };
+    box.appendChild(d);
+  });
+  const addBtn=document.createElement('div');
+  addBtn.className='swadd'; addBtn.textContent='＋'; addBtn.title='把当前颜色加进调色盘';
+  addBtn.onclick=()=>{
+    const v=currentColor();
+    if(SET.palette.includes(v)){ palHint('这个颜色已经在盘里了'); return; }
+    SET.palette.push(v); saveSet(); renderPalette(); palHint('已加入 '+v);
+  };
+  box.appendChild(addBtn);
+  ['fillc','linec','textA','textB','sfxFill','sfxLine','sfxA','sfxB'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && !el._palHook){ el._palHook=true;
+      el.onfocus=()=>{ACTIVE_COLOR=id; palHint('当前编辑：'+id);};
+      el.onclick=()=>{ACTIVE_COLOR=id; palHint('当前编辑：'+id);};
+    }
+  });
+}
+renderPalette();
 renderList(); draw();
 </script>
 
