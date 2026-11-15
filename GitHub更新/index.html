@@ -46,6 +46,13 @@
   .sw:hover{outline:2px solid var(--accent);}
   .swadd{width:22px;height:22px;border-radius:4px;border:1px dashed #666;color:#9ad;cursor:pointer;
     display:flex;align-items:center;justify-content:center;font-size:14px;background:transparent;}
+  #tabs2{display:flex;gap:4px;margin:10px 0 8px;}
+  #tabs2 button{flex:1;padding:9px 0;font-size:13px;background:#2a2a33;border:0;border-radius:6px;
+    color:#aaa;cursor:pointer;font-weight:600;}
+  #tabs2 button:hover{background:#34343f;color:#ddd;}
+  #tabs2 button.on{background:var(--accent);color:#fff;}
+  .pane{display:none;}
+  .pane.on{display:block;}
   #special{background:#1c1c22;border:1px solid #2f2f3a;border-radius:6px;padding:8px;margin-top:6px;}
 
   #bgimg{position:fixed;inset:0;z-index:0;background-size:cover;background-position:center;
@@ -92,141 +99,152 @@
     <button id="btnUndo" class="sec" style="flex:1" title="撤销 Ctrl+Z">↶ 撤销</button>
     <button id="btnRedo" class="sec" style="flex:1" title="重做 Ctrl+Shift+Z">↷ 重做</button>
   </div>
-  <div class="row" style="margin-bottom:8px">
-    <button id="btnSaveProj" class="sec" style="flex:1" title="保存工程">💾 存工程</button>
-    <button id="btnOpenProj" class="sec" style="flex:1" title="打开工程">📂 开工程</button>
+  <div class="row" style="margin-bottom:4px">
+    <button id="btnSaveProj" class="sec" style="flex:1">💾 存工程</button>
+    <button id="btnOpenProj" class="sec" style="flex:1">📂 开工程</button>
   </div>
   <input type="file" id="projFile" accept=".json,application/json" style="display:none">
-  <h3>导入 / 页面</h3>
-  <input type="file" id="file" accept="image/*" multiple>
-  <span id="info" style="font-size:11px;color:#888"></span>
-  <label><input type="checkbox" id="role"> 特殊页（封面／扉页／后记）</label>
 
-  <h3>气泡（基础）</h3>
-  <div class="row"><button id="add">＋ 加气泡</button><button id="del" class="sec">删除</button></div>
-  <label>文字</label>
-  <textarea id="txt"></textarea>
-  <label>样式</label>
-  <select id="style">
-    <option value="smooth">圆滑 · 普通对白</option>
-    <option value="star">星形 · 感叹／刺激</option>
-    <option value="tremble">颤音 · 小声</option>
-    <option value="soft">软边 · 心里话</option>
-    <option value="rect">方框 · 系统提示</option>
-  </select>
-  <label>字号 <span id="fsv" class="tag">22</span></label>
-  <input type="range" id="fs" min="12" max="52" value="22">
-  <label>每行字数 <span id="cpv" class="tag">6</span></label>
-  <input type="range" id="cp" min="3" max="16" value="6">
-  <label>左右留白 <span id="pxv" class="tag">26</span></label>
-  <input type="range" id="px" min="2" max="90" value="26">
-  <label>上下留白 <span id="pyv" class="tag">16</span></label>
-  <input type="range" id="py" min="2" max="90" value="16">
-  <label>气泡色 <input type="color" id="fillc" value="#ffffff"> 描边 <input type="color" id="linec" value="#141414"></label>
-
-  <label>调色盘（左键上色 · 双击替换 · 右键删除）</label>
-  <div id="palette" class="palrow"></div>
-  <div class="row" style="margin-top:5px">
-    <button id="pickColor" class="sec" style="font-size:11px;padding:5px 9px">💧 吸管取色</button>
-    <span id="palHint" style="font-size:11px;color:#888"></span>
+  <div id="tabs2">
+    <button data-tab="pane-page" class="on">页面</button>
+    <button data-tab="pane-bubble">气泡</button>
+    <button data-tab="pane-sfx">拟声</button>
+    <button data-tab="pane-cen">遮挡</button>
   </div>
 
-  <label>文字颜色</label>
-  <div class="row">
-    <select id="textMode" style="width:auto;flex:1">
-      <option value="auto">自动（按底色反色）</option>
-      <option value="solid">单色</option>
-      <option value="gradient">渐变</option>
+  <div class="pane" id="pane-bubble">
+    <div class="row"><button id="add">＋ 加气泡</button><button id="del" class="sec">删除</button></div>
+    <label>文字</label>
+    <textarea id="txt"></textarea>
+    <label>样式</label>
+    <select id="style">
+      <option value="smooth">圆滑 · 普通对白</option>
+      <option value="star">星形 · 感叹／刺激</option>
+      <option value="tremble">颤音 · 小声</option>
+      <option value="soft">软边 · 心里话</option>
+      <option value="rect">方框 · 系统提示</option>
     </select>
-    <input type="color" id="textA" value="#111111" title="单色 / 渐变起点">
-    <input type="color" id="textB" value="#5b8cff" title="渐变终点">
-  </div>
-  <label>渐变方向</label>
-  <select id="gradDir">
-    <option value="v">上下</option>
-    <option value="h">左右</option>
-    <option value="d">斜向</option>
-  </select>
-  <label>不透明度 <span id="opv" class="tag">97%</span></label>
-  <input type="range" id="op" min="10" max="100" value="97">
-  <label>描边粗细 <span id="stv" class="tag">3</span></label>
-  <input type="range" id="st" min="1" max="8" value="3">
-  <label><input type="checkbox" id="tail" checked> 带小尖尖</label>
-  <label><input type="checkbox" id="vertTxt"> 竖排文字（从右到左）</label>
-  <label>批量套用当前气泡的样式</label>
-  <div class="row">
-    <button id="applyPage" class="sec" style="flex:1">套用到本页</button>
-    <button id="applyAll" class="sec" style="flex:1">套用到全部页</button>
-  </div>
+    <label>字号 <span id="fsv" class="tag">22</span></label>
+    <input type="range" id="fs" min="12" max="52" value="22">
+    <label>每行字数 <span id="cpv" class="tag">6</span></label>
+    <input type="range" id="cp" min="3" max="16" value="6">
+    <label>左右留白 <span id="pxv" class="tag">26</span></label>
+    <input type="range" id="px" min="2" max="90" value="26">
+    <label>上下留白 <span id="pyv" class="tag">16</span></label>
+    <input type="range" id="py" min="2" max="90" value="16">
+    <label>气泡色 <input type="color" id="fillc" value="#ffffff"> 描边 <input type="color" id="linec" value="#141414"></label>
 
-  <h3>特殊参数</h3>
-  <div id="special"></div>
+    <label>调色盘（左键上色 · 双击替换 · 右键删除）</label>
+    <div id="palette" class="palrow"></div>
+    <div class="row" style="margin-top:5px">
+      <button id="pickColor" class="sec" style="font-size:11px;padding:5px 9px">💧 吸管取色</button>
+      <span id="palHint" style="font-size:11px;color:#888"></span>
+    </div>
 
-  <h3>拟声 / 环境音</h3>
-  <div class="row"><button id="addSfx">＋ 加拟声</button><button id="delSfx" class="sec">删除拟声</button></div>
-  <label>文字（可换行）</label>
-  <textarea id="sfxTxt"></textarea>
-  <label>字号 <span id="sfxv" class="tag">40</span></label>
-  <input type="range" id="sfxSize" min="14" max="110" value="40">
-  <label>角度 <span id="sfxrv" class="tag">-8</span></label>
-  <input type="range" id="sfxRot" min="-45" max="45" value="-8">
-  <label>字色 <input type="color" id="sfxFill" value="#ffffff"> 描边 <input type="color" id="sfxLine" value="#141414"></label>
-  <label>拟声颜色模式</label>
-  <div class="row">
-    <select id="sfxMode" style="width:auto;flex:1">
-      <option value="solid">单色</option>
-      <option value="gradient">渐变</option>
+    <label>文字颜色</label>
+    <div class="row">
+      <select id="textMode" style="width:auto;flex:1">
+        <option value="auto">自动（按底色反色）</option>
+        <option value="solid">单色</option>
+        <option value="gradient">渐变</option>
+      </select>
+      <input type="color" id="textA" value="#111111" title="单色 / 渐变起点">
+      <input type="color" id="textB" value="#5b8cff" title="渐变终点">
+    </div>
+    <label>渐变方向</label>
+    <select id="gradDir">
+      <option value="v">上下</option><option value="h">左右</option><option value="d">斜向</option>
     </select>
-    <input type="color" id="sfxA" value="#ffd76a" title="渐变起点">
-    <input type="color" id="sfxB" value="#ff5b5b" title="渐变终点">
-  </div>
-  <label>渐变方向</label>
-  <select id="sfxDir">
-    <option value="h">左右</option>
-    <option value="v">上下</option>
-    <option value="d">斜向</option>
-  </select>
-  <label>描边粗细 <span id="sfxwv" class="tag">6</span></label>
-  <input type="range" id="sfxW" min="0" max="18" value="6">
-  <label>柔光 <span id="sfxgv" class="tag">0</span></label>
-  <input type="range" id="sfxGlow" min="0" max="30" value="0">
-  <label>加括号</label>
-  <select id="sfxSign"><option value="none">不加</option><option value="paren">（ ）</option><option value="bracket">「 」</option></select>
+    <label>不透明度 <span id="opv" class="tag">97%</span></label>
+    <input type="range" id="op" min="10" max="100" value="97">
+    <label>描边粗细 <span id="stv" class="tag">3</span></label>
+    <input type="range" id="st" min="1" max="8" value="3">
+    <label><input type="checkbox" id="tail" checked> 带小尖尖</label>
+    <label><input type="checkbox" id="vertTxt"> 竖排文字（从右到左）</label>
 
-  <h3>打码 / 遮挡</h3>
-  <div class="row">
-    <button id="addCensor">＋ 加遮挡</button>
-    <button id="delCensor" class="sec">删除遮挡</button>
-  </div>
-  <label>笔刷涂抹（涂哪盖哪）</label>
-  <div class="row">
-    <button id="addBrush">🖌 开始涂抹</button>
-    <button id="delBrush" class="sec">删除笔画</button>
-  </div>
-  <label>笔刷大小 <span id="brushSv" class="tag">70</span></label>
-  <input type="range" id="brushSize" min="10" max="240" value="70">
+    <h3>特殊参数</h3>
+    <div id="special"></div>
 
-  <label>类型（矩形遮挡用）</label>
-  <select id="cenType">
-    <option value="mosaic">马赛克</option>
-    <option value="blur">模糊</option>
-    <option value="solid">纯色条</option>
-  </select>
-  <label>强度 <span id="cenSv" class="tag">14</span></label>
-  <input type="range" id="cenStrong" min="2" max="60" value="14">
-  <label>颜色（纯色条用） <input type="color" id="cenColor" value="#000000"></label>
-  <label>不透明度 <span id="cenOv" class="tag">100%</span></label>
-  <input type="range" id="cenOp" min="10" max="100" value="100">
-
-  <h3>导出</h3>
-  <div class="row">
-    <button id="pickDir">选择导出文件夹</button>
+    <h3>批量</h3>
+    <div class="row">
+      <button id="applyPage" class="sec" style="flex:1">套用样式到本页</button>
+      <button id="applyAll" class="sec" style="flex:1">套用到全部页</button>
+    </div>
   </div>
-  <div class="row"><span id="dirName" style="font-size:11px;color:#888">未选择（默认下载到浏览器下载目录）</span></div>
-  <button id="save">导出当前页</button>
-  <button id="saveAll">导出全部（打包 zip，按页码命名）</button>
-  <button id="mark" class="sec">仅标记</button>
-  <div class="hint">绿点×2 尾巴根部 · 红点尾巴尖 · 拖本体移动</div>
+
+  <div class="pane" id="pane-sfx">
+    <div class="row"><button id="addSfx">＋ 加拟声</button><button id="delSfx" class="sec">删除</button></div>
+    <label>文字（可换行）</label>
+    <textarea id="sfxTxt"></textarea>
+    <label>字号 <span id="sfxv" class="tag">40</span></label>
+    <input type="range" id="sfxSize" min="14" max="110" value="40">
+    <label>角度 <span id="sfxrv" class="tag">-8</span></label>
+    <input type="range" id="sfxRot" min="-45" max="45" value="-8">
+    <label>字色 <input type="color" id="sfxFill" value="#ffffff"> 描边 <input type="color" id="sfxLine" value="#141414"></label>
+    <label>颜色模式</label>
+    <div class="row">
+      <select id="sfxMode" style="width:auto;flex:1">
+        <option value="solid">单色</option><option value="gradient">渐变</option>
+      </select>
+      <input type="color" id="sfxA" value="#ffd76a" title="渐变起点">
+      <input type="color" id="sfxB" value="#ff5b5b" title="渐变终点">
+    </div>
+    <label>渐变方向</label>
+    <select id="sfxDir"><option value="h">左右</option><option value="v">上下</option><option value="d">斜向</option></select>
+    <label>描边粗细 <span id="sfxwv" class="tag">6</span></label>
+    <input type="range" id="sfxW" min="0" max="18" value="6">
+    <label>柔光 <span id="sfxgv" class="tag">0</span></label>
+    <input type="range" id="sfxGlow" min="0" max="30" value="0">
+    <label>加括号</label>
+    <select id="sfxSign"><option value="none">不加</option><option value="paren">（ ）</option><option value="bracket">「 」</option></select>
+  </div>
+
+  <div class="pane" id="pane-cen">
+    <h3>笔刷涂抹</h3>
+    <div class="row">
+      <button id="addBrush">🖌 开始涂抹</button>
+      <button id="delBrush" class="sec">删笔画</button>
+    </div>
+    <label>笔刷类型</label>
+    <select id="brushMode">
+      <option value="mosaic">马赛克</option><option value="glow">圣光棒</option>
+    </select>
+    <label>笔刷大小 <span id="brushSv" class="tag">70</span></label>
+    <input type="range" id="brushSize" min="10" max="240" value="70">
+    <label>圣光颜色 <input type="color" id="glowColor" value="#ffffff"></label>
+    <label>柔边 <span id="glowFv" class="tag">18</span></label>
+    <input type="range" id="glowFeather" min="2" max="60" value="18">
+
+    <h3>矩形遮挡</h3>
+    <div class="row">
+      <button id="addCensor">＋ 加矩形</button>
+      <button id="delCensor" class="sec">删除</button>
+    </div>
+    <label>类型</label>
+    <select id="cenType">
+      <option value="mosaic">马赛克</option><option value="blur">模糊</option><option value="solid">纯色条</option>
+    </select>
+    <label>强度 <span id="cenSv" class="tag">14</span></label>
+    <input type="range" id="cenStrong" min="2" max="60" value="14">
+    <label>颜色（纯色条用） <input type="color" id="cenColor" value="#000000"></label>
+    <label>不透明度 <span id="cenOv" class="tag">100%</span></label>
+    <input type="range" id="cenOp" min="10" max="100" value="100">
+  </div>
+
+  <div class="pane on" id="pane-page">
+    <h3>导入</h3>
+    <input type="file" id="file" accept="image/*" multiple>
+    <span id="info" style="font-size:11px;color:#888"></span>
+    <label><input type="checkbox" id="role"> 特殊页（封面／扉页／后记）</label>
+
+    <h3>导出</h3>
+    <div class="row"><button id="pickDir">选择导出文件夹</button></div>
+    <div class="row"><span id="dirName" style="font-size:11px;color:#888">未选择（默认走下载）</span></div>
+    <button id="save">导出当前页</button>
+    <button id="saveAll">导出全部（zip）</button>
+    <button id="mark" class="sec">仅标记完成</button>
+    <div class="hint">绿点×2 尾巴根部 · 红点尾巴尖 · 拖本体移动</div>
+  </div>
 </div>
 </div>
 
@@ -264,7 +282,7 @@
 const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
 const FONT='"Microsoft YaHei","Noto Sans SC",sans-serif';
 let items=[], cur=-1, selB=-1, selS=-1, selC=-1, drag=null, view='todo', dirHandle=null, NUM={};
-let BRUSHING=false, BRUSH_SIZE=70, GUIDE=[];
+let BRUSHING=false, BRUSH_SIZE=70, BRUSH_MODE='mosaic', BRUSH_COLOR='#ffffff', BRUSH_FEATHER=18, GUIDE=[], INTERNAL_DRAG=false;
 
 function normHex(v){
   let h=(v||'#ffffff').replace('#','').trim();
@@ -440,20 +458,54 @@ function mosaicLayer(it, blk){
   it._mos=c; it._mosKey=blk;
   return c;
 }
+function brushPath(pts, r){
+  ctx.beginPath();
+  if(pts.length===1){ ctx.arc(pts[0].x, pts[0].y, Math.max(1,r), 0, Math.PI*2); return; }
+  ctx.lineWidth=Math.max(1, r*2); ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
+  if(pts.length===2) ctx.lineTo(pts[1].x+0.01, pts[1].y);
+}
+function drawGlowBrush(c, isSel){
+  const pts=c.points||[];
+  if(!pts.length) return;
+  const r=(c.size||70)/2;
+  const col=c.color||'#ffffff';
+  const feather=Math.max(1, c.feather||18);
+  ctx.save();
+  // 外圈柔光
+  ctx.globalAlpha=(c.op??100)/100 * 0.85;
+  ctx.filter=`blur(${feather}px)`;
+  ctx.strokeStyle=col; ctx.fillStyle=col;
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  brushPath(pts, r*1.15);
+  if(pts.length===1) ctx.fill(); else ctx.stroke();
+  // 内芯
+  ctx.filter='none';
+  ctx.globalAlpha=(c.op??100)/100;
+  brushPath(pts, r*0.72);
+  if(pts.length===1) ctx.fill(); else ctx.stroke();
+  ctx.restore();
+}
 function drawBrushCensor(it, c, isSel){
   const pts=c.points||[];
   if(!pts.length) return;
-  const r=(c.size||70)/2, blk=Math.max(2,c.strength||14);
-  const mos=mosaicLayer(it, blk);
+  const r=(c.size||70)/2;
   ctx.save();
-  ctx.beginPath();
-  for(const p of pts){ ctx.moveTo(p.x+r, p.y); ctx.arc(p.x, p.y, r, 0, Math.PI*2); }
-  ctx.clip();
-  ctx.globalAlpha=(c.op??100)/100;
-  ctx.imageSmoothingEnabled=false;
-  ctx.drawImage(mos, 0,0,mos.width,mos.height, 0,0,it.img.width,it.img.height);
-  ctx.imageSmoothingEnabled=true;
-  ctx.globalAlpha=1;
+  if((c.mode||'mosaic')==='glow'){
+    drawGlowBrush(c, isSel);
+  } else {
+    const blk=Math.max(2,c.strength||14);
+    const mos=mosaicLayer(it, blk);
+    ctx.beginPath();
+    for(const p of pts){ ctx.moveTo(p.x+r, p.y); ctx.arc(p.x, p.y, r, 0, Math.PI*2); }
+    ctx.clip();
+    ctx.globalAlpha=(c.op??100)/100;
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(mos, 0,0,mos.width,mos.height, 0,0,it.img.width,it.img.height);
+    ctx.imageSmoothingEnabled=true;
+    ctx.globalAlpha=1;
+  }
   ctx.restore();
   if(isSel){
     ctx.save();
@@ -781,17 +833,24 @@ function renderList(){
     d.className='thumb'+(i===cur?' sel':'')+(it.done?' done':'');
     d.draggable=true;
     const num=NUM[i]||'';
-    d.innerHTML=`<img src="${it.url}">
+    d.innerHTML=`<img src="${it.url}" draggable="false">
       <div class="pn">${it.special?'':num}</div>
       <div class="role">${it.special?'特':''}</div>
       <span>${it.name}</span>`;
     d.onclick=()=>{cur=i;selB=-1;selS=-1;sync();draw();renderList();};
     d.oncontextmenu=(ev)=>{ ev.preventDefault(); cur=i; selB=-1; selS=-1; sync(); draw(); renderList(); showCtx(ev.clientX,ev.clientY,i); };
-    d.ondragstart=e=>e.dataTransfer.setData('text/plain',i);
+    d.ondragstart=e=>{ INTERNAL_DRAG=true; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(i)); };
+    d.ondragend=()=>{ INTERNAL_DRAG=false; };
     d.ondragover=e=>e.preventDefault();
-    d.ondrop=e=>{e.preventDefault();const from=+e.dataTransfer.getData('text/plain');
-      if(from===i)return;const [m]=items.splice(from,1);items.splice(i,0,m);
-      cur=items.indexOf(m);renderList();draw();};
+    d.ondrop=e=>{
+      e.preventDefault(); e.stopPropagation();
+      const raw=e.dataTransfer.getData('text/plain');
+      const from=parseInt(raw,10);
+      INTERNAL_DRAG=false;
+      if(isNaN(from)||from===i) return;
+      const [m]=items.splice(from,1); items.splice(i,0,m);
+      cur=items.indexOf(m); renderList(); draw();
+    };
     list.appendChild(d);
   });
   document.getElementById('tabTodo').className=view==='todo'?'on':'';
@@ -818,13 +877,23 @@ function importFiles(files){
 ['cv','left','list'].forEach(id=>{
   const el=document.getElementById(id);
   if(!el) return;
-  el.addEventListener('dragover', e=>{ e.preventDefault(); el.style.outline='2px dashed var(--accent)'; });
+  el.addEventListener('dragover', e=>{
+    e.preventDefault();
+    if(INTERNAL_DRAG) return;
+    const dt=e.dataTransfer;
+    if(dt && dt.types && Array.prototype.indexOf.call(dt.types,'Files')>=0){
+      dt.dropEffect='copy';
+      el.style.outline='2px dashed var(--accent)';
+    }
+  });
   el.addEventListener('dragleave', ()=>{ el.style.outline=''; });
   el.addEventListener('drop', e=>{
     e.preventDefault(); el.style.outline='';
-    if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length){
-      importFiles(e.dataTransfer.files);
-    }
+    if(INTERNAL_DRAG){ INTERNAL_DRAG=false; return; }        // 内部排序拖拽，忽略
+    const dt=e.dataTransfer;
+    if(!dt) return;
+    const isFiles = dt.types && Array.prototype.indexOf.call(dt.types,'Files')>=0;
+    if(isFiles && dt.files && dt.files.length){ importFiles(dt.files); }
   });
 });
 document.getElementById('file').onchange=e=>{
@@ -863,6 +932,13 @@ function sync(){
     el('gradDir').disabled=(el('textMode').value!=='gradient');
     buildSpecial();
   }
+  if(it&&selC>=0 && it.censor && it.censor[selC] && it.censor[selC].type==='brush'){
+    const bc=it.censor[selC];
+    el('brushMode').value=bc.mode||'mosaic';
+    el('brushSize').value=bc.size||70; el('brushSv').textContent=bc.size||70;
+    el('glowColor').value=bc.color||'#ffffff';
+    el('glowFeather').value=bc.feather||18; el('glowFv').textContent=bc.feather||18;
+  }
   if(it&&selC>=0 && it.censor && it.censor[selC]){
     const c=it.censor[selC];
     el('cenType').value=c.type||'mosaic';
@@ -899,7 +975,8 @@ cv.onmousedown=e=>{
   if(BRUSHING){
     pushUndo();
     it.censor=it.censor||[];
-    it.censor.push({type:'brush', points:[{x:p.x,y:p.y}], size:BRUSH_SIZE, strength:14, op:100});
+    it.censor.push({type:'brush', mode:BRUSH_MODE, points:[{x:p.x,y:p.y}], size:BRUSH_SIZE,
+      strength:14, op:100, color:BRUSH_COLOR, feather:BRUSH_FEATHER});
     selC=it.censor.length-1; selB=-1; selS=-1;
     drag={mode:'brush'};
     draw();
@@ -1067,6 +1144,25 @@ if(addBrushEl) addBrushEl.onclick=()=>{
 const delBrushEl=document.getElementById('delBrush');
 if(delBrushEl) delBrushEl.onclick=()=>{const it=curItem();
   if(it&&selC>=0&&it.censor[selC]&&it.censor[selC].type==='brush'){pushUndo();it.censor.splice(selC,1);selC=-1;sync();draw();}};
+const brushModeEl=document.getElementById('brushMode');
+if(brushModeEl) brushModeEl.onchange=e=>{
+  BRUSH_MODE=e.target.value;
+  const it=curItem();
+  if(it&&selC>=0&&it.censor[selC]&&it.censor[selC].type==='brush'){ pushUndo(); it.censor[selC].mode=BRUSH_MODE; draw(); }
+};
+const glowColorEl=document.getElementById('glowColor');
+if(glowColorEl) glowColorEl.oninput=e=>{
+  BRUSH_COLOR=e.target.value;
+  const it=curItem();
+  if(it&&selC>=0&&it.censor[selC]&&it.censor[selC].type==='brush'){ it.censor[selC].color=BRUSH_COLOR; draw(); }
+};
+const glowFeatherEl=document.getElementById('glowFeather');
+if(glowFeatherEl) glowFeatherEl.oninput=e=>{
+  BRUSH_FEATHER=+e.target.value;
+  document.getElementById('glowFv').textContent=e.target.value;
+  const it=curItem();
+  if(it&&selC>=0&&it.censor[selC]&&it.censor[selC].type==='brush'){ it.censor[selC].feather=BRUSH_FEATHER; draw(); }
+};
 const brushSizeEl=document.getElementById('brushSize');
 if(brushSizeEl) brushSizeEl.oninput=e=>{
   BRUSH_SIZE=+e.target.value;
@@ -1373,8 +1469,7 @@ function refreshTabs(){ renderList(); }
 
 /* 弹窗交互 */
 loadSet(); 
-document.getElementById('gear').onclick=()=>{document.getElementById('modal').classList.add('on'); applySet(); renderKeys();};
-document.getElementById('mClose').onclick=()=>document.getElementById('modal').classList.remove('on');
+document.getElementById('gear').onclick=()=>{document.getElementById('modal').classList.add('on'); applySet(); renderKeys();};document.getElementById('mClose').onclick=()=>document.getElementById('modal').classList.remove('on');
 document.getElementById('saveSet').onclick=()=>document.getElementById('modal').classList.remove('on');
 document.getElementById('modal').onclick=(e)=>{ if(e.target.id==='modal') e.currentTarget.classList.remove('on'); };
 [['uiBg','bg'],['uiPanel','panel'],['uiStrip','strip'],['uiAccent','accent']].forEach(([id,k])=>{
@@ -1582,7 +1677,7 @@ function renderPalette(){
     d.onclick=()=>{ applyColorTo(ACTIVE_COLOR,c); palHint('已上色 '+c); };
     d.ondblclick=(ev)=>{ ev.preventDefault();
       const cur=currentColor();
-      SET.palette[idx]=cur; saveSet(); renderPalette(); palHint('已替换为 '+cur); };
+      SET.palette[idx]=cur; saveSet();  palHint('已替换为 '+cur); };
     d.oncontextmenu=(ev)=>{ ev.preventDefault();
       SET.palette.splice(idx,1); saveSet(); renderPalette(); palHint('已删除该色'); };
     box.appendChild(d);
@@ -1604,6 +1699,17 @@ function renderPalette(){
   });
 }
 renderPalette();
+/* 面板分页 */
+(function(){
+  const btns=[...document.querySelectorAll('#tabs2 button')];
+  const panes=[...document.querySelectorAll('#right .pane')];
+  btns.forEach(b=>{
+    b.onclick=()=>{
+      btns.forEach(x=>x.classList.toggle('on', x===b));
+      panes.forEach(pg=>pg.classList.toggle('on', pg.id===b.dataset.tab));
+    };
+  });
+})();
 renderList(); draw();
 </script>
 
